@@ -7,8 +7,9 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
 - **Django 6.0** with Django REST Framework
 - **PostgreSQL** database with environment-based configuration
 - **JWT Authentication** using djangorestframework-simplejwt
+- **Custom User Model** with role-based access (Patient/Pharmacy Admin)
 - **Modular Settings** (base, development, production, testing)
-- **Indian Locale** (Asia/Kolkata timezone, en-in language)
+- **Indian Locale** (Asia/Kolkata timezone, en-in language, +91 phone number validation)
 - **Comprehensive Testing** with pytest, pytest-django, and parallel execution
 - **AWS S3 Integration** ready for production static/media files
 - **Stripe Payment** integration ready
@@ -121,8 +122,9 @@ DJANGO_ENVIRONMENT=testing pytest -n auto
 
 ## Project Structure
 
-```
+```text
 Pharma-Platform/
+├── accounts/               # User management & Authentication
 ├── config/                 # Project configuration
 │   ├── settings/          # Modular settings
 │   │   ├── __init__.py   # Settings loader
@@ -133,6 +135,9 @@ Pharma-Platform/
 │   ├── urls.py           # URL configuration
 │   ├── wsgi.py           # WSGI configuration
 │   └── asgi.py           # ASGI configuration
+├── orders/                 # Order management
+├── pharmacies/             # Pharmacy management
+├── prescriptions/          # Prescription management
 ├── tests/                 # Test suite
 │   ├── conftest.py       # Pytest configuration
 │   └── test_setup.py     # Setup verification tests
