@@ -132,6 +132,7 @@ SIMPLE_JWT = {
 FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_PRESCRIPTION_FILE_SIZE_MB', default=10, cast=int) * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
 ALLOWED_PRESCRIPTION_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf']
+ALLOWED_PRESCRIPTION_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
 PRESCRIPTION_FILE_URL_EXPIRATION = config('PRESCRIPTION_URL_EXPIRATION_SECONDS', default=3600, cast=int)
 
 # AWS S3 Configuration (base settings)

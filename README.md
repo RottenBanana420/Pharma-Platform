@@ -10,11 +10,16 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
 - **Custom User Model** with role-based access (Patient/Pharmacy Admin)
 - **Modular Settings** (base, development, production, testing)
 - **Indian Locale** (Asia/Kolkata timezone, en-in language, +91 phone number validation)
-- **Order Management** with sequential status workflow (Placed -> Confirmed -> Shipped -> Delivered)
+- **Order Management** with sequential status workflow (Placed → Confirmed → Shipped → Delivered)
 - **Pharmacy Management** including license verification and medicine inventory
 - **Prescription Workflow** with upload, verification, and rejection handling
 - **Comprehensive Testing** with pytest, parallel execution, and in-memory SQLite for speed
-- **AWS S3 Integration** ready for production static/media files
+- **AWS S3 Integration** with custom storage backend for prescription files
+  - File validation (size, extension, MIME type, corruption detection)
+  - Intelligent path generation with collision prevention
+  - Server-side encryption (SSE-S3 AES-256)
+  - Private file access with presigned URLs
+  - Metadata support for auditing
 - **Stripe Payment** integration ready
 - **Production-ready** security settings with strict validation for `SECRET_KEY` and `ALLOWED_HOSTS`
 - **Database-Agnostic Test Suite** compatible with PostgreSQL and SQLite
@@ -36,9 +41,15 @@ The project is organized into modular Django applications located in the `apps/`
 
 ### 3. `prescriptions`
 
-- **Prescription**: Patient-uploaded prescriptions (S3 storage).
+- **Prescription**: Patient-uploaded prescriptions with AWS S3 storage.
 - **Workflow**: Verification system allowing admins to verify or reject prescriptions with reasons.
 - **Validation**: Enforces terminal states (cannot revert from verified/rejected).
+- **File Security**:
+  - Comprehensive validation (size, extension, MIME type, corruption detection)
+  - MIME type spoofing prevention
+  - Intelligent path generation with UUID-based collision prevention
+  - Server-side encryption (AES-256)
+  - Private access with presigned URLs
 
 ### 4. `orders`
 
