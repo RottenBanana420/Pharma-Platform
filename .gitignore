@@ -7,6 +7,8 @@ __pycache__/
 env/
 venv/
 ENV/
+.env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -22,20 +24,26 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+.python-version
 
 # Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media
-/staticfiles
-/static
+/media/
+/staticfiles/
+# /static is NOT ignored because it contains source assets in this project
+# used for STATICFILES_DIRS. Only STATIC_ROOT (staticfiles) should be ignored.
 
 # Environment
 .env
 .env.local
 .env.*.local
+.flaskenv
+secrets.json
+*.secrets
 
 # IDE
 .vscode/
@@ -43,9 +51,17 @@ db.sqlite3-journal
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Testing
@@ -53,7 +69,13 @@ Thumbs.db
 .coverage.*
 .pytest_cache/
 htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 
 # Logs
 logs/
 *.log
+pip-log.txt
+pip-delete-this-directory.txt

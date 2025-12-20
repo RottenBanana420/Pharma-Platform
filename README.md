@@ -2,14 +2,23 @@
 
 A production-ready Django-based pharmacy e-commerce platform with PostgreSQL database, REST API, and comprehensive testing framework.
 
-## Features
+## 🚀 Key Features
 
 - **Django 6.0** with Django REST Framework
 - **PostgreSQL** database with environment-based configuration
 - **JWT Authentication** using `djangorestframework-simplejwt`
+  - Short-lived access tokens (15m) and long-lived refresh tokens (7d)
+  - Token rotation and blacklisting for enhanced security
+  - Custom claims (user type, verification status) in JWT payloads
+- **Rate Limiting & Security**
+  - IP-based rate limiting for authentication endpoints
+  - Customizable throttling rates for login, registration, and token refresh
+  - CORS configuration for secure cross-origin requests
+  - Strict production security validation (`SECRET_KEY`, `ALLOWED_HOSTS`, HTTPS)
 - **Custom User Model** with role-based access (Patient/Pharmacy Admin)
-- **Modular Settings** (base, development, production, testing)
-- **Indian Locale** (Asia/Kolkata timezone, en-in language, +91 phone number validation)
+- **Indian Locale Support**
+  - Asia/Kolkata timezone and `en-in` language
+  - Indian phone number validation (+91 format)
 - **Order Management** with sequential status workflow (Placed → Confirmed → Shipped → Delivered)
 - **Pharmacy Management** including license verification and medicine inventory
 - **Prescription Workflow** with upload, verification, and rejection handling
@@ -20,50 +29,25 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
   - Server-side encryption (SSE-S3 AES-256)
   - Private file access with presigned URLs
   - Metadata support for auditing
-- **Stripe Payment** integration ready
-- **Production-ready** security settings with strict validation for `SECRET_KEY` and `ALLOWED_HOSTS`
-- **Database-Agnostic Test Suite** compatible with PostgreSQL and SQLite
 
-## Core Applications
+## 📁 Core Applications (`apps/`)
 
-The project is organized into modular Django applications located in the `apps/` directory:
+The project is organized into modular Django applications:
 
-### 1. `accounts`
+| Application | Responsibility |
+| :--- | :--- |
+| **`accounts`** | User management, JWT Authentication, Password validation, Rate limiting |
+| **`pharmacies`** | Business details, license management, Medicine inventory & stock tracking |
+| **`prescriptions`** | Patient uploads, S3 storage integration, Admin verification workflow |
+| **`orders`** | Order lifecycle, sequential status transitions, business rule enforcement |
 
-- **User Model**: Custom `User` model extending `AbstractUser`.
-- **Fields**: Email (unique), Phone Number (+91 validation), User Type (Patient/Admin), Verification Status.
-- **Authentication**: JWT-based authentication for secure API access.
+## 🛠 Prerequisites
 
-### 2. `pharmacies`
-
-- **Pharmacy**: Business details, license number (unique), contact info, and verification status.
-- **Medicine**: Inventory management with pricing, stock tracking, and per-pharmacy uniqueness.
-
-### 3. `prescriptions`
-
-- **Prescription**: Patient-uploaded prescriptions with AWS S3 storage.
-- **Workflow**: Verification system allowing admins to verify or reject prescriptions with reasons.
-- **Validation**: Enforces terminal states (cannot revert from verified/rejected).
-- **File Security**:
-  - Comprehensive validation (size, extension, MIME type, corruption detection)
-  - MIME type spoofing prevention
-  - Intelligent path generation with UUID-based collision prevention
-  - Server-side encryption (AES-256)
-  - Private access with presigned URLs
-
-### 4. `orders`
-
-- **Order**: Links patients, pharmacies, and verified prescriptions.
-- **Order Items**: Line items with point-of-sale pricing and quantity tracking.
-- **Workflow**: Strict sequential status transitions and business rule enforcement (e.g., tracking number required for shipping).
-
-## Prerequisites
-
-- Python 3.12+ (installed via pyenv)
+- Python 3.12+ (managed via `pyenv`)
 - PostgreSQL
-- pyenv and pyenv-virtualenv
+- `pyenv` and `pyenv-virtualenv`
 
-## Installation
+## ⚙️ Installation
 
 ### 1. Clone the repository
 
@@ -99,8 +83,6 @@ Copy `.env.example` to `.env` and update with your configuration:
 cp .env.example .env
 ```
 
-Edit `.env` with your database credentials and other settings.
-
 ### 5. Set up PostgreSQL database
 
 ```bash
@@ -117,7 +99,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-## Running the Application
+## 🚀 Running the Application
 
 ### Development Server
 
@@ -128,9 +110,9 @@ python manage.py runserver
 
 The application will be available at `http://localhost:8000/`
 
-## Testing
+## 🧪 Testing
 
-The project uses pytest with comprehensive test coverage and parallel execution.
+The project uses `pytest` with comprehensive test coverage and parallel execution.
 
 ### Run all tests
 
@@ -141,7 +123,7 @@ DJANGO_ENVIRONMENT=testing pytest
 ### Run specific test file
 
 ```bash
-DJANGO_ENVIRONMENT=testing pytest apps/accounts/tests/test_models.py
+DJANGO_ENVIRONMENT=testing pytest apps/accounts/tests/test_registration.py
 ```
 
 ### Run with coverage report
@@ -150,76 +132,48 @@ DJANGO_ENVIRONMENT=testing pytest apps/accounts/tests/test_models.py
 DJANGO_ENVIRONMENT=testing pytest --cov=. --cov-report=html
 ```
 
-### Run tests in parallel
-
-```bash
-DJANGO_ENVIRONMENT=testing pytest -n auto
-```
-
 ### Infrastructure Optimizations
 
 - **In-Memory SQLite**: Used during tests for extreme speed.
 - **Parallel Execution**: Leverages `pytest-xdist` to utilize all CPU cores.
 - **Fast Hashing**: MD5 hashing used for passwords in tests to reduce overhead.
-- **Database-Agnosticism**: Tests use Django introspection to maintain compatibility across different database engines (PostgreSQL/SQLite).
+- **Database-Agnosticism**: Tests maintain compatibility across PostgreSQL and SQLite.
 
-## Project Structure
+## 🏗 Project Structure
 
 ```text
 Pharma-Platform/
-├── apps/                 # Core applications
-│   ├── accounts/         # User management & Authentication
-│   ├── orders/           # Order management & Workflows
-│   ├── pharmacies/       # Pharmacy & Medicine inventory
-│   └── prescriptions/    # Prescription uploads & Verification
-├── config/               # Project configuration
-│   ├── settings/        # Modular settings
-│   │   ├── base.py      # Base settings
-│   │   ├── development.py # Development settings
-│   │   ├── production.py  # Production settings
-│   │   └── testing.py   # Testing settings (Optimized)
-│   ├── urls.py          # URL configuration
-│   ├── wsgi.py          # WSGI configuration
-│   └── asgi.py          # ASGI configuration
-├── tests/               # Global test configuration
-│   ├── conftest.py      # Pytest fixtures
-│   └── test_setup.py    # Setup verification tests
-├── logs/                # Application logs
-├── static/              # Static files
-├── media/               # Media files
-├── templates/           # Django templates
-├── manage.py            # Django management script
-├── pytest.ini           # Pytest configuration
-├── requirements.txt     # Python dependencies
-├── .env                 # Environment variables (not in git)
-├── .env.example         # Environment variables template
-└── README.md            # This file
+├── apps/               # Core applications (accounts, orders, pharmacies, prescriptions)
+├── config/             # Project configuration and settings
+│   ├── settings/       # Modular settings (base, development, production, testing)
+│   ├── storage_backends.py # Custom AWS S3 storage implementation
+│   └── urls.py         # Root URL configuration
+├── tests/              # Global infrastructure and setup tests
+├── docs/               # Project documentation
+├── logs/               # Application log files
+├── static/             # Static assets
+├── media/              # Locally stored media files
+├── manage.py           # Django management script
+├── pytest.ini          # Pytest configuration
+├── requirements.txt    # Project dependencies
+├── .env                # Environment variables (local-only)
+└── .env.example        # Environment variables template
 ```
 
-## Environment Variables
+## 🔐 Security & Production
 
-Key environment variables:
-
-- `SECRET_KEY` - Django secret key (Required in production)
-- `ALLOWED_HOSTS` - List of allowed hostnames (Required in production)
-- `DJANGO_ENVIRONMENT` - Environment (`development`/`production`/`testing`)
-- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` - Database credentials
-- `CORS_ALLOWED_ORIGINS` - Origins allowed for cross-site requests
-
-## Production Verification
-
-To ensure the application is ready for production, run:
+To ensure the application is ready for production, run the deployment check:
 
 ```bash
 DJANGO_ENVIRONMENT=production python manage.py check --deploy
 ```
 
-This verifies critical security settings including `SECRET_KEY`, `ALLOWED_HOSTS`, HTTPS settings, and more.
+Key security features:
 
-## Development
+- **Strict Environment Validation**: Fails early if `SECRET_KEY` or `ALLOWED_HOSTS` are misconfigured in production.
+- **JWT Security**: Tokens are short-lived with rotation enabled.
+- **AWS Security**: Prescriptions are stored privately with AES-256 encryption and accessed via expiring presigned URLs.
 
-The project uses a modular settings structure loaded based on `DJANGO_ENVIRONMENT`. This ensures clean separation between development, production, and high-performance testing environments.
-
-## License
+## 📄 License
 
 MIT License - See [LICENSE](LICENSE) file for details.
