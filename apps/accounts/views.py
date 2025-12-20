@@ -298,3 +298,190 @@ def protected_view(request):
         'user_type': user.user_type,
         'is_verified': user.is_verified,
     }, status=status.HTTP_200_OK)
+
+
+class UserProfileView(APIView):
+    """
+    User profile endpoint for retrieval and updates.
+    
+    GET: Retrieve current authenticated user's profile
+    PATCH: Update current authenticated user's profile
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Retrieve current authenticated user's profile.
+        
+        Returns:
+            200: User profile data
+            401: Unauthorized
+        """
+        from .serializers import UserProfileSerializer
+        
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request):
+        """
+        Update current authenticated user's profile.
+        
+        Allows updates to: phone_number, first_name, last_name
+        Ignores: email, user_type, is_verified (security)
+        
+        Returns:
+            200: Updated profile data
+            400: Validation errors
+            401: Unauthorized
+        """
+        from .serializers import UserProfileUpdateSerializer, UserProfileSerializer
+        
+        # Use update serializer for validation
+        serializer = UserProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True  # Allow partial updates
+        )
+        
+        if serializer.is_valid():
+            serializer.save()
+            
+            # Return full profile using read serializer
+            response_serializer = UserProfileSerializer(request.user)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordChangeView(APIView):
+    """
+    Password change endpoint.
+    
+    Requires old password verification before allowing change.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Change password for authenticated user.
+        
+        Returns:
+            200: Password changed successfully
+            400: Validation errors
+            401: Unauthorized
+        """
+        from .serializers import PasswordChangeSerializer
+        
+        serializer = PasswordChangeSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if serializer.is_valid():
+            # Set new password
+            request.user.set_password(serializer.validated_data['new_password'])
+            request.user.save()
+            
+            logger.info(f"Password changed for user: {request.user.email}")
+            
+            return Response(
+                {'detail': 'Password changed successfully.'},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetRequestView(APIView):
+    """
+    Password reset request endpoint.
+    
+    Generates reset token and sends email (stubbed for now).
+    Always returns success to not reveal if email exists.
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Request password reset token.
+        
+        Returns:
+            200: Always (security - don't reveal if email exists)
+            400: Invalid email format
+        """
+        from .serializers import PasswordResetRequestSerializer
+        from django.contrib.auth.tokens import default_token_generator
+        
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            
+            # Try to find user (case-insensitive)
+            try:
+                user = User.objects.get(email__iexact=email)
+                
+                # Generate reset token
+                token = default_token_generator.make_token(user)
+                
+                # In production, send email with reset link
+                # For now, log to console
+                logger.info(
+                    f"Password reset requested for {email}. "
+                    f"Token: {token}, UID: {user.pk}"
+                )
+                
+                # TODO: Send email with reset link
+                # reset_url = f"{settings.FRONTEND_URL}/reset-password/{user.pk}/{token}/"
+                # send_mail(...)
+                
+            except User.DoesNotExist:
+                # Don't reveal that user doesn't exist
+                logger.info(f"Password reset requested for non-existent email: {email}")
+            
+            # Always return success
+            return Response(
+                {'detail': 'If an account exists with this email, a password reset link has been sent.'},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    Password reset confirmation endpoint.
+    
+    Validates token and sets new password.
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Confirm password reset with token.
+        
+        Returns:
+            200: Password reset successfully
+            400: Invalid token or validation errors
+        """
+        from .serializers import PasswordResetConfirmSerializer
+        
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Get user from validated data
+            user = serializer.validated_data['user']
+            new_password = serializer.validated_data['new_password']
+            
+            # Set new password
+            user.set_password(new_password)
+            user.save()
+            
+            logger.info(f"Password reset completed for user: {user.email}")
+            
+            return Response(
+                {'detail': 'Password has been reset successfully.'},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
