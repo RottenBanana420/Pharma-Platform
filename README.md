@@ -16,6 +16,15 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
   - CORS configuration for secure cross-origin requests
   - Strict production security validation (`SECRET_KEY`, `ALLOWED_HOSTS`, HTTPS)
 - **Custom User Model** with role-based access (Patient/Pharmacy Admin)
+- **Role-Based Access Control (RBAC)**
+  - Custom DRF permission classes (`IsPatient`, `IsPharmacyAdmin`, `IsVerifiedPharmacy`)
+  - Strict endpoint protection based on user roles and verification status
+- **User Profile Management**
+  - Authenticated profile retrieval
+  - Partial updates for contact and personal information
+- **Password Management**
+  - Secure password change for authenticated users (with old password verification)
+  - Account recovery via password reset request and confirmation (token-based)
 - **Indian Locale Support**
   - Asia/Kolkata timezone and `en-in` language
   - Indian phone number validation (+91 format)
@@ -36,7 +45,7 @@ The project is organized into modular Django applications:
 
 | Application | Responsibility |
 | :--- | :--- |
-| **`accounts`** | User management, JWT Authentication, Password validation, Rate limiting |
+| **`accounts`** | User management, JWT Authentication, Password Management (Change/Reset), Rate limiting, RBAC Permissions, User Profiles |
 | **`pharmacies`** | Business details, license management, Medicine inventory & stock tracking |
 | **`prescriptions`** | Patient uploads, S3 storage integration, Admin verification workflow |
 | **`orders`** | Order lifecycle, sequential status transitions, business rule enforcement |
@@ -173,6 +182,11 @@ Key security features:
 - **Strict Environment Validation**: Fails early if `SECRET_KEY` or `ALLOWED_HOSTS` are misconfigured in production.
 - **JWT Security**: Tokens are short-lived with rotation enabled.
 - **AWS Security**: Prescriptions are stored privately with AES-256 encryption and accessed via expiring presigned URLs.
+- **Security Logging**:
+  - Continuous monitoring of authentication attempts (success/failure)
+  - Audit logging for password changes and resets
+  - IP-address tracking for sensitive registration and login events
+- **Advanced Throttling**: Tiered rate limits based on endpoint sensitivity (Registration, Login, Token Refresh).
 
 ## 📄 License
 

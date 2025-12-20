@@ -14,6 +14,10 @@ All authentication endpoints are rate-limited to prevent abuse.
 | `token/verify/` | `POST` | Verify a token's validity | - |
 | `validate-password/` | `POST` | Check password strength before registration | - |
 | `logout/` | `POST` | Blacklist the refresh token and logout | - |
+| `profile/` | `GET`, `PATCH` | Retrieve or update current user profile | - |
+| `password/change/` | `POST` | Change authenticated user's password | - |
+| `password/reset/` | `POST` | Request password reset email | - |
+| `password/reset/confirm/` | `POST` | Confirm password reset with token | - |
 
 ### Registration Payload
 

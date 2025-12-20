@@ -8,12 +8,14 @@ The Pharma Platform is a Django-based e-commerce backend designed for pharmacies
 
 ## 📂 Core Components
 
-### 1. `accounts` (User Management)
+### 1. `accounts` (Identity & Access)
 
 - **Custom User Model**: Extends `AbstractUser` to support `email` as the primary identifier.
-- **Roles**: Supports `patient` and `pharmacy_admin`.
+- **Roles & RBAC**: Supports `patient` and `pharmacy_admin` with custom DRF permission classes (`IsPatient`, `IsPharmacyAdmin`, `IsVerifiedPharmacy`).
+- **Profile Management**: Stateless profile retrieval and updates for authenticated users.
+- **Password Lifecycle**: Integrated password strength validation, secure change workflow, and token-based reset system.
 - **Authentication**: Stateless JWT-based authentication using `djangorestframework-simplejwt`.
-- **Security**: Implements IP-based rate limiting on sensitive endpoints.
+- **Security**: Implements IP-based rate limiting on sensitive endpoints and comprehensive security logging.
 
 ### 2. `pharmacies` (Inventory)
 
