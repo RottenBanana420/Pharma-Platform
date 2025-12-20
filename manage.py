@@ -2,6 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+# Add 'apps' to sys.path
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 
 def main():

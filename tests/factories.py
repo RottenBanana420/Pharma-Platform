@@ -4,6 +4,7 @@ Factory classes for creating test data using factory_boy.
 import factory
 from factory.django import DjangoModelFactory
 from faker import Faker
+from django.utils import timezone
 
 fake = Faker('en_IN')  # Indian locale for realistic test data
 
@@ -81,4 +82,68 @@ class MedicineFactory(DjangoModelFactory):
     )
     stock_quantity = factory.Faker('random_int', min=0, max=10000)
     pharmacy = factory.SubFactory(PharmacyFactory)
+
+
+class PrescriptionFactory(DjangoModelFactory):
+    """Factory for creating Prescription instances in tests."""
+    
+    class Meta:
+        model = 'prescriptions.Prescription'
+    
+    patient = factory.LazyAttribute(lambda o: UserFactory(user_type='patient'))
+    prescription_image_path = factory.Sequence(
+        lambda n: f's3://pharma-platform-prescriptions/prescriptions/{n}/prescription.jpg'
+    )
+    status = 'pending_verification'
+    # uploaded_at is auto_now_add, handled by model
+    verifier = None  # Optional, can be set in tests
+    verified_at = None  # Optional, set when verified
+    rejection_reason = ''  # Empty by default
+
+
+class OrderFactory(DjangoModelFactory):
+    """Factory for creating Order instances in tests."""
+    
+    class Meta:
+        model = 'orders.Order'
+    
+    patient = factory.SubFactory(UserFactory, user_type='patient')
+    pharmacy = factory.SubFactory(PharmacyFactory)
+    # Create a verified prescription by default
+    prescription = factory.SubFactory(
+        PrescriptionFactory,
+        status='verified',
+        verifier=factory.SubFactory(PharmacyAdminFactory),
+        verified_at=factory.LazyFunction(lambda: timezone.now())
+    )
+    total_amount = factory.Faker(
+        'pydecimal',
+        left_digits=6,
+        right_digits=2,
+        positive=True,
+        min_value=1.00,
+        max_value=999999.99
+    )
+    status = 'placed'
+    payment_reference_id = ''
+    tracking_number = ''
+
+
+class OrderItemFactory(DjangoModelFactory):
+    """Factory for creating OrderItem instances in tests."""
+    
+    class Meta:
+        model = 'orders.OrderItem'
+    
+    order = factory.SubFactory(OrderFactory)
+    medicine = factory.SubFactory(MedicineFactory)
+    quantity = factory.Faker('random_int', min=1, max=100)
+    unit_price = factory.Faker(
+        'pydecimal',
+        left_digits=4,
+        right_digits=2,
+        positive=True,
+        min_value=0.01,
+        max_value=9999.99
+    )
 

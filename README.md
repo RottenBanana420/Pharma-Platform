@@ -6,14 +6,44 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
 
 - **Django 6.0** with Django REST Framework
 - **PostgreSQL** database with environment-based configuration
-- **JWT Authentication** using djangorestframework-simplejwt
+- **JWT Authentication** using `djangorestframework-simplejwt`
 - **Custom User Model** with role-based access (Patient/Pharmacy Admin)
 - **Modular Settings** (base, development, production, testing)
 - **Indian Locale** (Asia/Kolkata timezone, en-in language, +91 phone number validation)
-- **Comprehensive Testing** with pytest, pytest-django, and parallel execution
+- **Order Management** with sequential status workflow (Placed -> Confirmed -> Shipped -> Delivered)
+- **Pharmacy Management** including license verification and medicine inventory
+- **Prescription Workflow** with upload, verification, and rejection handling
+- **Comprehensive Testing** with pytest, parallel execution, and in-memory SQLite for speed
 - **AWS S3 Integration** ready for production static/media files
 - **Stripe Payment** integration ready
 - **Production-ready** security settings
+
+## Core Applications
+
+The project is organized into modular Django applications located in the `apps/` directory:
+
+### 1. `accounts`
+
+- **User Model**: Custom `User` model extending `AbstractUser`.
+- **Fields**: Email (unique), Phone Number (+91 validation), User Type (Patient/Admin), Verification Status.
+- **Authentication**: JWT-based authentication for secure API access.
+
+### 2. `pharmacies`
+
+- **Pharmacy**: Business details, license number (unique), contact info, and verification status.
+- **Medicine**: Inventory management with pricing, stock tracking, and per-pharmacy uniqueness.
+
+### 3. `prescriptions`
+
+- **Prescription**: Patient-uploaded prescriptions (S3 storage).
+- **Workflow**: Verification system allowing admins to verify or reject prescriptions with reasons.
+- **Validation**: Enforces terminal states (cannot revert from verified/rejected).
+
+### 4. `orders`
+
+- **Order**: Links patients, pharmacies, and verified prescriptions.
+- **Order Items**: Line items with point-of-sale pricing and quantity tracking.
+- **Workflow**: Strict sequential status transitions and business rule enforcement (e.g., tracking number required for shipping).
 
 ## Prerequisites
 
@@ -99,7 +129,7 @@ DJANGO_ENVIRONMENT=testing pytest
 ### Run specific test file
 
 ```bash
-DJANGO_ENVIRONMENT=testing pytest tests/test_setup.py
+DJANGO_ENVIRONMENT=testing pytest apps/accounts/tests/test_models.py
 ```
 
 ### Run with coverage report
@@ -114,113 +144,57 @@ DJANGO_ENVIRONMENT=testing pytest --cov=. --cov-report=html
 DJANGO_ENVIRONMENT=testing pytest -n auto
 ```
 
-### Test markers
+### Infrastructure Optimizations
 
-- `@pytest.mark.unit` - Unit tests
-- `@pytest.mark.integration` - Integration tests
-- `@pytest.mark.slow` - Slow tests (can be excluded with `-m "not slow"`)
+- **In-Memory SQLite**: Used during tests for extreme speed.
+- **Parallel Execution**: Leverages `pytest-xdist` to utilize all CPU cores.
+- **Fast Hashing**: MD5 hashing used for passwords in tests to reduce overhead.
 
 ## Project Structure
 
 ```text
 Pharma-Platform/
-├── accounts/               # User management & Authentication
-├── config/                 # Project configuration
-│   ├── settings/          # Modular settings
-│   │   ├── __init__.py   # Settings loader
-│   │   ├── base.py       # Base settings
+├── apps/                 # Core applications
+│   ├── accounts/         # User management & Authentication
+│   ├── orders/           # Order management & Workflows
+│   ├── pharmacies/       # Pharmacy & Medicine inventory
+│   └── prescriptions/    # Prescription uploads & Verification
+├── config/               # Project configuration
+│   ├── settings/        # Modular settings
+│   │   ├── base.py      # Base settings
 │   │   ├── development.py # Development settings
 │   │   ├── production.py  # Production settings
-│   │   └── testing.py    # Testing settings
-│   ├── urls.py           # URL configuration
-│   ├── wsgi.py           # WSGI configuration
-│   └── asgi.py           # ASGI configuration
-├── orders/                 # Order management
-├── pharmacies/             # Pharmacy management
-├── prescriptions/          # Prescription management
-├── tests/                 # Test suite
-│   ├── conftest.py       # Pytest configuration
-│   └── test_setup.py     # Setup verification tests
-├── logs/                  # Application logs
-├── static/               # Static files
-├── media/                # Media files
-├── templates/            # Django templates
-├── manage.py             # Django management script
-├── pytest.ini            # Pytest configuration
-├── requirements.txt      # Python dependencies
-├── .env                  # Environment variables (not in git)
-├── .env.example          # Environment variables template
-└── README.md             # This file
+│   │   └── testing.py   # Testing settings (Optimized)
+│   ├── urls.py          # URL configuration
+│   ├── wsgi.py          # WSGI configuration
+│   └── asgi.py          # ASGI configuration
+├── tests/               # Global test configuration
+│   ├── conftest.py      # Pytest fixtures
+│   └── test_setup.py    # Setup verification tests
+├── logs/                # Application logs
+├── static/              # Static files
+├── media/               # Media files
+├── templates/           # Django templates
+├── manage.py            # Django management script
+├── pytest.ini           # Pytest configuration
+├── requirements.txt     # Python dependencies
+├── .env                 # Environment variables (not in git)
+├── .env.example         # Environment variables template
+└── README.md            # This file
 ```
 
 ## Environment Variables
 
-Key environment variables (see `.env.example` for complete list):
+Key environment variables:
 
 - `SECRET_KEY` - Django secret key
-- `DJANGO_ENVIRONMENT` - Environment (development/production/testing)
-- `DB_NAME` - Database name
-- `DB_USER` - Database user
-- `DB_PASSWORD` - Database password
-- `DB_HOST` - Database host
-- `DB_PORT` - Database port
+- `DJANGO_ENVIRONMENT` - Environment (`development`/`production`/`testing`)
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` - Database credentials
 
 ## Development
 
-### Settings Structure
-
-The project uses a modular settings structure:
-
-- `base.py` - Common settings for all environments
-- `development.py` - Development-specific settings
-- `production.py` - Production-specific settings
-- `testing.py` - Test-specific settings (in-memory SQLite, optimizations)
-
-The appropriate settings module is loaded based on the `DJANGO_ENVIRONMENT` variable.
-
-### Logging
-
-Logs are written to both console and file (`logs/django.log`). The logging level is:
-
-- `DEBUG` in development
-- `INFO` in production
-- Disabled in testing
-
-## Production Deployment
-
-1. Set `DJANGO_ENVIRONMENT=production`
-2. Configure all required environment variables
-3. Set `DEBUG=False` (automatic in production settings)
-4. Configure `ALLOWED_HOSTS`
-5. Set up PostgreSQL database
-6. Run migrations: `python manage.py migrate`
-7. Collect static files: `python manage.py collectstatic`
-8. Configure web server (nginx/Apache) and WSGI server (gunicorn/uwsgi)
-
-### Optional: AWS S3 for Static/Media Files
-
-Set `USE_S3=True` and configure AWS credentials in environment variables.
-
-## Testing Philosophy
-
-This project follows **Test-Driven Development (TDD)** principles:
-
-1. Write tests first
-2. Watch them fail
-3. Write minimal code to pass
-4. Refactor
-
-All tests are designed to fail if configuration is incorrect - **fix the configuration, never modify the tests**.
+The project uses a modular settings structure loaded based on `DJANGO_ENVIRONMENT`. This ensures clean separation between development, production, and high-performance testing environments.
 
 ## License
 
-See LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for your changes
-4. Implement your changes
-5. Ensure all tests pass
-6. Submit a pull request
+MIT License - See [LICENSE](LICENSE) file for details.
