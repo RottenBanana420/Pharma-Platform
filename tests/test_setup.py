@@ -54,11 +54,9 @@ class TestDatabaseConnectivity:
     def test_database_tables_exist(self):
         """Verify Django tables are created."""
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='django_migrations'"
-            )
-            result = cursor.fetchone()
-            assert result is not None
+            # Database-agnostic way to check for table existence
+            tables = connection.introspection.table_names(cursor)
+            assert 'django_migrations' in tables, "django_migrations table should exist"
     
     def test_user_model_accessible(self):
         """Verify User model is accessible and can perform basic operations."""

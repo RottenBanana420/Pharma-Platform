@@ -16,7 +16,8 @@ A production-ready Django-based pharmacy e-commerce platform with PostgreSQL dat
 - **Comprehensive Testing** with pytest, parallel execution, and in-memory SQLite for speed
 - **AWS S3 Integration** ready for production static/media files
 - **Stripe Payment** integration ready
-- **Production-ready** security settings
+- **Production-ready** security settings with strict validation for `SECRET_KEY` and `ALLOWED_HOSTS`
+- **Database-Agnostic Test Suite** compatible with PostgreSQL and SQLite
 
 ## Core Applications
 
@@ -149,6 +150,7 @@ DJANGO_ENVIRONMENT=testing pytest -n auto
 - **In-Memory SQLite**: Used during tests for extreme speed.
 - **Parallel Execution**: Leverages `pytest-xdist` to utilize all CPU cores.
 - **Fast Hashing**: MD5 hashing used for passwords in tests to reduce overhead.
+- **Database-Agnosticism**: Tests use Django introspection to maintain compatibility across different database engines (PostgreSQL/SQLite).
 
 ## Project Structure
 
@@ -187,9 +189,21 @@ Pharma-Platform/
 
 Key environment variables:
 
-- `SECRET_KEY` - Django secret key
+- `SECRET_KEY` - Django secret key (Required in production)
+- `ALLOWED_HOSTS` - List of allowed hostnames (Required in production)
 - `DJANGO_ENVIRONMENT` - Environment (`development`/`production`/`testing`)
 - `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` - Database credentials
+- `CORS_ALLOWED_ORIGINS` - Origins allowed for cross-site requests
+
+## Production Verification
+
+To ensure the application is ready for production, run:
+
+```bash
+DJANGO_ENVIRONMENT=production python manage.py check --deploy
+```
+
+This verifies critical security settings including `SECRET_KEY`, `ALLOWED_HOSTS`, HTTPS settings, and more.
 
 ## Development
 

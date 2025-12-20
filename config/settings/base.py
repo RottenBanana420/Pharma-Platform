@@ -4,10 +4,7 @@ Base settings shared across all environments.
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -17,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
+SECRET_KEY = config('SECRET_KEY', default='placeholder-key-for-development-purposes-only-must-be-changed-in-production-12345')
 
 # Application definition
 INSTALLED_APPS = [
@@ -31,6 +28,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
+    'storages',
     
     # Local apps
     'accounts',
@@ -45,6 +44,7 @@ AUTH_USER_MODEL = 'accounts.User'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -127,6 +127,37 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_PRESCRIPTION_FILE_SIZE_MB', default=10, cast=int) * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_MEMORY_SIZE
+ALLOWED_PRESCRIPTION_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf']
+PRESCRIPTION_FILE_URL_EXPIRATION = config('PRESCRIPTION_URL_EXPIRATION_SECONDS', default=3600, cast=int)
+
+# AWS S3 Configuration (base settings)
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='pharma-platform-test')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='ap-south-1')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_DEFAULT_ACL = None  # Private files by default
+AWS_QUERYSTRING_AUTH = True  # Enable pre-signed URLs
+AWS_S3_FILE_OVERWRITE = False  # Prevent accidental overwrites
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+# CORS Default Settings (should be overridden in env-specific settings)
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Logging configuration
 LOGGING = {
