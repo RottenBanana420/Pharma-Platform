@@ -1,14 +1,209 @@
 """
-Custom serializers for JWT authentication.
+Custom serializers for JWT authentication and user registration.
 
-Provides custom token serializers that add additional claims to JWT tokens.
+Provides:
+- Custom token serializers with additional claims
+- User registration serializer with comprehensive validation
+- Password validation serializer for pre-submission checks
 """
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
 User = get_user_model()
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    
+    Handles:
+    - Email validation (format, uniqueness, normalization)
+    - Password validation (strength requirements)
+    - Password confirmation matching
+    - Phone number validation (format, uniqueness)
+    - User type validation
+    - Secure password hashing
+    """
+    
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        min_length=8,
+    )
+    confirm_password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+    )
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'password', 'confirm_password',
+            'phone_number', 'user_type', 'is_verified'
+        ]
+        read_only_fields = ['id', 'is_verified']
+        extra_kwargs = {
+            'email': {'required': True},
+            'phone_number': {'required': True},
+            'user_type': {'required': True},
+        }
+    
+    def validate_email(self, value):
+        """
+        Validate email field.
+        
+        - Trim whitespace
+        - Convert to lowercase
+        - Check uniqueness (case-insensitive)
+        """
+        if not value:
+            raise serializers.ValidationError("Email address is required.")
+        
+        # Trim and normalize
+        value = value.strip().lower()
+        
+        # Check uniqueness (case-insensitive)
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with that email already exists."
+            )
+        
+        return value
+    
+    def validate_password(self, value):
+        """
+        Validate password strength using Django's password validators.
+        """
+        # Create a temporary user instance for validation
+        user = User(
+            email=self.initial_data.get('email', ''),
+            phone_number=self.initial_data.get('phone_number', ''),
+            user_type=self.initial_data.get('user_type', 'patient'),
+        )
+        
+        try:
+            validate_password(value, user=user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        
+        return value
+    
+    def validate_phone_number(self, value):
+        """
+        Validate phone number field.
+        
+        - Trim whitespace
+        - Check format (handled by model validator)
+        - Check uniqueness
+        """
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+        
+        # Trim whitespace
+        value = value.strip()
+        
+        # Check uniqueness
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError(
+                "A user with that phone number already exists."
+            )
+        
+        return value
+    
+    def validate_user_type(self, value):
+        """
+        Validate user type is one of the allowed choices.
+        """
+        if not value:
+            raise serializers.ValidationError("User type is required.")
+        
+        valid_types = [choice[0] for choice in User.USER_TYPE_CHOICES]
+        if value not in valid_types:
+            raise serializers.ValidationError(
+                f"User type must be one of: {', '.join(valid_types)}"
+            )
+        
+        return value
+    
+    def validate(self, attrs):
+        """
+        Object-level validation.
+        
+        - Ensure password and confirm_password match
+        """
+        password = attrs.get('password')
+        confirm_password = attrs.get('confirm_password')
+        
+        if password != confirm_password:
+            raise serializers.ValidationError({
+                'confirm_password': 'Passwords do not match.'
+            })
+        
+        return attrs
+    
+    def create(self, validated_data):
+        """
+        Create user with hashed password.
+        
+        - Remove confirm_password from data
+        - Hash password securely
+        - Set is_verified to False by default
+        """
+        # Remove confirm_password as it's not a model field
+        validated_data.pop('confirm_password', None)
+        
+        # Extract password
+        password = validated_data.pop('password')
+        
+        # Create user with username set to email
+        user = User.objects.create_user(
+            username=validated_data['email'],
+            **validated_data
+        )
+        
+        # Set password (hashes it)
+        user.set_password(password)
+        
+        # Ensure is_verified is False for new users
+        user.is_verified = False
+        
+        user.save()
+        
+        return user
+
+
+class PasswordValidationSerializer(serializers.Serializer):
+    """
+    Serializer for validating password strength.
+    
+    Used for pre-submission validation to provide
+    immediate feedback to users about password requirements.
+    """
+    
+    password = serializers.CharField(
+        required=True,
+        style={'input_type': 'password'},
+    )
+    
+    def validate_password(self, value):
+        """
+        Validate password against all Django password validators.
+        """
+        if not value:
+            raise serializers.ValidationError("Password is required.")
+        
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        
+        return value
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -63,9 +258,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         email = attrs.get('email')
         password = attrs.get('password')
         
-        # Try to get user by email
+        # Try to get user by email (case-insensitive)
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             raise AuthenticationFailed('No active account found with the given credentials')
         

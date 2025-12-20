@@ -2,6 +2,8 @@
 URL configuration for accounts app.
 
 Provides endpoints for:
+- User registration
+- Password validation
 - Token obtain (login)
 - Token refresh
 - Token verify
@@ -12,6 +14,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenVerifyView
 
 from .views import (
+    UserRegistrationView,
+    PasswordValidationView,
     CustomTokenObtainPairView,
     CustomTokenRefreshView,
     LogoutView,
@@ -19,6 +23,10 @@ from .views import (
 )
 
 urlpatterns = [
+    # Registration endpoints
+    path('register/', UserRegistrationView.as_view(), name='register'),
+    path('validate-password/', PasswordValidationView.as_view(), name='validate_password'),
+    
     # JWT Token endpoints
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
